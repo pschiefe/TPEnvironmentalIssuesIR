@@ -27,7 +27,8 @@ p_needed <- c(
   "sandwich",
   "stargazer",
   "modelsummary",
-  "clarify"
+  "clarify",
+  "broom"
 )
 
 # check if they are already installed, install if not installed
@@ -79,6 +80,7 @@ Oil$physint <- 8 + (-1) * Oil$physint
 Oil$physint_factor <- as.factor(Oil$physint)
 Oil$pts_a_factor <- as.factor(Oil$pts_a)
 Oil$pts_s_factor <- as.factor(Oil$pts_s)
+
 
 ```
 
@@ -144,6 +146,9 @@ stargazer(m1, m2, m3, m4, m5, m6, type="text",
 
 ```
 
+
+
+
 PPs and FDs:
 ```{r}
 
@@ -151,12 +156,12 @@ PPs and FDs:
 #sims <- clarify::sim(m1)
 
 #All varaibles included and some are means/medians...
+tidy(m1)
 
-library(clarify)
-sims <- sim(m1, n=1000)
+sims_m1 <- sim(m1, n=1000)
 
 pps_nooil <- sim_setx(
-  sim = sims,
+  sim = sims_m1,
   x = list(
     Oil = 0,
     polity2 = -2,
@@ -171,7 +176,7 @@ pps_nooil <- sim_setx(
 )
 
 pps_oil <- sim_setx(
-  sim = sims,
+  sim = sims_m1,
   x = list(
     Oil = 1,
     polity2 = -2,
@@ -186,22 +191,22 @@ pps_oil <- sim_setx(
 )
 
 
-# pps_oil <- sim_setx(
-#   sim = sims_m1,
-#   x = list(
-#     Oil = 0,
-#     polity2 = median(Oil$polity2,na.rm = TRUE),
-#     gdpenl = mean(Oil$gdpenl,na.rm = TRUE),
-#     jobinsecurity_bdm = mean(Oil$jobinsecurity_bdm,na.rm = TRUE),
-#     lpop = mean(Oil$lpop,na.rm = TRUE),
-#     diss_lag = mean(Oil$diss_lag,na.rm = TRUE),
-#     cowwarl = median(Oil$cowwarl,na.rm = TRUE),
-#     lmtnest = median(Oil$lmtnest,na.rm = TRUE),
-#     physint_lag = median(Oil$physint_lag,na.rm = TRUE)
-#   )
-# )
-# 
-# summary(pps_nooil)
+pps_oil <- sim_setx(
+  sim = sims_m1,
+  x = list(
+    Oil = 0,
+    polity2 = median(Oil$polity2,na.rm = T),
+    gdpenl = mean(Oil$gdpenl,na.rm = T),
+    jobinsecurity_bdm = mean(Oil$jobinsecurity_bdm,na.rm = T),
+    lpop = mean(Oil$lpop,na.rm = T),
+    diss_lag = mean(Oil$diss_lag,na.rm = T),
+    cowwarl = median(Oil$cowwarl,na.rm = T),
+    lmtnest = median(Oil$lmtnest,na.rm = T),
+    physint_lag = median(Oil$physint_lag,na.rm = T)
+  )
+)
+
+
 
 
 
