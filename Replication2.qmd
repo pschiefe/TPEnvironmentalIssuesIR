@@ -1,0 +1,215 @@
+---
+title: "Replication2"
+author: "Luisa Schiefer"
+toc: true
+format:
+  html: default
+  pdf:
+    toc: true
+    geometry: 
+      - top=30mm
+      - left=30mm
+---
+```{r setup}
+#| include: false
+# put all packages we use in a vector
+p_needed <- c(
+  "tidyverse",
+  "readxl",
+  "countrycode",
+  "janitor",
+  "visdat",
+  "styler",
+  "lubridate",
+  "haven",
+  "MASS",
+  "lmtest",
+  "sandwich",
+  "stargazer",
+  "modelsummary",
+  "clarify"
+)
+
+# check if they are already installed, install if not installed
+lapply(
+  p_needed[!(p_needed %in% rownames(installed.packages()))],
+  install.packages
+)
+
+# load the packages
+lapply(p_needed, library, character.only = TRUE)
+
+# same theme for all plots
+ggplot2::theme_set(ggplot2::theme_minimal())
+```
+
+
+\newpage
+
+```{r}
+Oil <- read_dta("data/oil_hr.dta")
+
+```
+
+*Oil* >1/3 export revenues from fuels (H1)
+
+pts_s political terror scale state
+pts_a political terror scale amnesty
+*physint* Physical Integrity Index
+
+
+we use his measure of oil production value, rents per capita. Rents are measured as the total value of oil and natural gas production, less country-specific extraction costs (including the cost of capital). The variable reports this value, divided by midyear population, for each country–year in the data.
+
+*oil_gas_rentPOP*? H2
+
+*polity2*, revised polity score?
+*gdpen*: GDP per Capita
+*jobinsecurity_goeman*s -> bdm
+natural log of midyear population for each observation in the data: *lpop*
+COw: Repression may also occur in the context of broader violent conflicts, including civil and international wars. To control for this possibility, we use a binary indicator from the Correlates of War project. The variable equals 1 in country–years experiencing civil and/or international wars: *cowwars*
+the log of the percentage of mountainous terrain in a state: *lmtnest*
+one-year lag of our dependent variable: *physint_lag*
+*diss_lag* dissent
+*cowwarl*
+
+Variable transformation:
+```{r}
+#Reverse coding of physint:
+Oil$physint <- 8 + (-1) * Oil$physint
+Oil$physint_factor <- as.factor(Oil$physint)
+Oil$pts_a_factor <- as.factor(Oil$pts_a)
+Oil$pts_s_factor <- as.factor(Oil$pts_s)
+
+```
+
+Ordered Logit Model with clustered standrad errors
+
+
+```{r}
+
+#Model 1
+m1 <- polr(physint_factor ~ Oil + polity2 + gdpenl +jobinsecurity_bdm +lpop + diss_lag + cowwarl + lmtnest + physint_lag , data = Oil, Hess=TRUE)
+summary(m1)
+
+summary(m1, cluster=c("ccode")) # hier ändert sich nicht wirklich etwas
+cluster_se1 <- as.vector(summary(m1,cluster = c("ccode"))$coefficients[,"Std. Error"])
+stargazer(m1,type = "text",se = list(cluster_se1))
+
+#Model 2
+m2 <- polr(physint_factor ~ oil_gas_rentPOP + polity2 + gdpenl +jobinsecurity_bdm +lpop + diss_lag + cowwarl + lmtnest + physint_lag , data = Oil, Hess=TRUE)
+summary(m2)
+
+summary(m2, cluster=c("ccode")) # hier ändert sich nicht wirklich etwas
+cluster_se2 <- as.vector(summary(m2,cluster = c("ccode"))$coefficients[,"Std. Error"])
+stargazer(m2,type = "text",se = list(cluster_se2))
+
+#Model 3
+m3 <- polr(pts_a_factor ~ Oil + polity2 + gdpenl +jobinsecurity_bdm +lpop + diss_lag + cowwarl + lmtnest + physint_lag , data = Oil, Hess=TRUE)
+summary(m3)
+
+summary(m3, cluster=c("ccode")) # hier ändert sich nicht wirklich etwas
+cluster_se3 <- as.vector(summary(m3,cluster = c("ccode"))$coefficients[,"Std. Error"])
+stargazer(m3,type = "text",se = list(cluster_se3))
+
+#Model 4
+m4 <- polr(pts_a_factor ~ oil_gas_rentPOP + polity2 + gdpenl +jobinsecurity_bdm +lpop + diss_lag + cowwarl + lmtnest + physint_lag , data = Oil, Hess=TRUE)
+summary(m4)
+
+summary(m4, cluster=c("ccode")) # hier ändert sich nicht wirklich etwas
+cluster_se4 <- as.vector(summary(m4,cluster = c("ccode"))$coefficients[,"Std. Error"])
+stargazer(m4,type = "text",se = list(cluster_se4))
+
+#Model 5
+m5 <- polr(pts_s_factor ~ Oil + polity2 + gdpenl +jobinsecurity_bdm +lpop + diss_lag + cowwarl + lmtnest + physint_lag , data = Oil, Hess=TRUE)
+summary(m5)
+
+summary(m5, cluster=c("ccode")) # hier ändert sich nicht wirklich etwas
+cluster_se5 <- as.vector(summary(m5,cluster = c("ccode"))$coefficients[,"Std. Error"])
+stargazer(m5,type = "text",se = list(cluster_se5))
+
+#Model 6
+m6 <- polr(pts_s_factor ~ oil_gas_rentPOP + polity2 + gdpenl +jobinsecurity_bdm +lpop + diss_lag + cowwarl + lmtnest + physint_lag , data = Oil, Hess=TRUE)
+summary(m6)
+
+summary(m6, cluster=c("ccode")) # hier ändert sich nicht wirklich etwas
+cluster_se6 <- as.vector(summary(m6,cluster = c("ccode"))$coefficients[,"Std. Error"])
+stargazer(m6,type = "text",se = list(cluster_se6))
+
+stargazer(m1, m2, m3, m4, m5, m6, type="text",
+          se = list(cluster_se1,cluster_se2, cluster_se3, cluster_se4, cluster_se5, cluster_se6),
+          covariate.labels=c("Oil","FUEL Rent PC","DEMOCRACY", "GDPpc", "INSECURE", "POP", "DISSENT", "WAR", "MOUNTAINS", "REPRESST-1"), out="models1.html")
+#Are the clustered standard errors included?
+
+
+
+```
+
+PPs and FDs:
+```{r}
+
+#physint_factor ~ Oil + polity2 + gdpenl +jobinsecurity_bdm +lpop + diss_lag + cowwarl + lmtnest + physint_lag
+#sims <- clarify::sim(m1)
+
+#All varaibles included and some are means/medians...
+
+library(clarify)
+sims <- sim(m1, n=1000)
+
+pps_nooil <- sim_setx(
+  sim = sims,
+  x = list(
+    Oil = 0,
+    polity2 = -2,
+    gdpenl = 4.359197,
+    jobinsecurity_bdm = 0.1900695,
+    lpop = 9.12801,
+    diss_lag = 0.3754406,
+    cowwarl = 0,
+    lmtnest = 2.302585,
+    physint_lag = 3
+  )
+)
+
+pps_oil <- sim_setx(
+  sim = sims,
+  x = list(
+    Oil = 1,
+    polity2 = -2,
+    gdpenl = 4.359197,
+    jobinsecurity_bdm = 0.1900695,
+    lpop = 9.12801,
+    diss_lag = 0.3754406,
+    cowwarl = 0,
+    lmtnest = 2.302585,
+    physint_lag = 3
+  )
+)
+
+
+# pps_oil <- sim_setx(
+#   sim = sims_m1,
+#   x = list(
+#     Oil = 0,
+#     polity2 = median(Oil$polity2,na.rm = TRUE),
+#     gdpenl = mean(Oil$gdpenl,na.rm = TRUE),
+#     jobinsecurity_bdm = mean(Oil$jobinsecurity_bdm,na.rm = TRUE),
+#     lpop = mean(Oil$lpop,na.rm = TRUE),
+#     diss_lag = mean(Oil$diss_lag,na.rm = TRUE),
+#     cowwarl = median(Oil$cowwarl,na.rm = TRUE),
+#     lmtnest = median(Oil$lmtnest,na.rm = TRUE),
+#     physint_lag = median(Oil$physint_lag,na.rm = TRUE)
+#   )
+# )
+# 
+# summary(pps_nooil)
+
+
+
+
+
+
+
+```
+
+
+
